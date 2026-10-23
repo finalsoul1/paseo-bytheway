@@ -90,13 +90,13 @@ async function assertConcurrency(paseo: PaseoApi, settings: SidekickSettings, mo
     else ask += 1;
   }
   if (total >= settings.maxConcurrentTotal) {
-    throw new Error(`侧聊总并发已达上限（${settings.maxConcurrentTotal}），请等待现有侧聊完成`);
+    throw new Error(`Side-chat concurrency limit reached (${settings.maxConcurrentTotal}). Wait for a running side chat to finish.`);
   }
   if (mode === "work" && work >= settings.maxConcurrentWork) {
-    throw new Error(`Build 并发已达上限（${settings.maxConcurrentWork}），请稍后再试`);
+    throw new Error(`Build concurrency limit reached (${settings.maxConcurrentWork}). Try again later.`);
   }
   if (mode === "ask" && ask >= settings.maxConcurrentAsk) {
-    throw new Error(`Chat 并发已达上限（${settings.maxConcurrentAsk}），请稍后再试`);
+    throw new Error(`Chat concurrency limit reached (${settings.maxConcurrentAsk}). Try again later.`);
   }
 }
 
@@ -133,9 +133,9 @@ export async function askThread(paseo: PaseoApi, settings: SidekickSettings, inp
   }
 
   const mainRef = await paseo.agents.ref(input.mainAgentId).refresh();
-  if (!mainRef) throw new Error("主会话不存在或已不可用");
+  if (!mainRef) throw new Error("The main session is unavailable.");
   const main = mainRef.agent;
-  if (!main.workspaceId) throw new Error("主会话没有所属 workspace，无法创建旁路会话");
+  if (!main.workspaceId) throw new Error("The main session has no workspace, so a side chat cannot be created.");
 
   // 解析 provider / model（支持 "provider/model" 覆盖）
   let provider = main.provider;
@@ -169,7 +169,7 @@ export async function askThread(paseo: PaseoApi, settings: SidekickSettings, inp
       : registry.findLastActive(input.mainAgentId, input.mode);
     if (thread) {
       if (thread.state !== "open") {
-        throw new Error("该侧聊已停止：可「重建并继续」，或用 /btw-new 新开线程");
+        throw new Error("This side thread has stopped. Rebuild it to continue, or use /btw-new to start a new thread.");
       }
       return continueThread(paseo, settings, thread, input, contextMode);
     }
@@ -206,10 +206,10 @@ async function continueThread(
     registry.upsertThread({
       ...thread,
       state: "stopped",
-      stateReason: "会话已归档或不存在",
+      stateReason: "archived or unavailable",
       updatedAt: Date.now(),
     });
-    throw new Error("该侧聊已停止：可「重建并继续」，或用 /btw-new 新开线程");
+    throw new Error("This side thread has stopped. Rebuild it to continue, or use /btw-new to start a new thread.");
   }
 
   const busy = agent.status === "running";
@@ -223,7 +223,7 @@ async function continueThread(
       if (tail.unreliable) {
         attachments.push(
           textAttachment(
-            "主会话上下文快照.md",
+            "main-session-context.md",
             buildSnapshotText(tail, {
               messages: PASSIVE_SNAPSHOT_MESSAGES,
               includeDigest: settings.includeActionDigest,
@@ -239,7 +239,7 @@ async function continueThread(
       } else {
         const increment = buildIncrementText(tail, thread.syncCursor, settings.includeActionDigest);
         if (increment) {
-          attachments.push(textAttachment("主会话增量更新.md", increment.text));
+          attachments.push(textAttachment("main-session-update.md", increment.text));
           registry.upsertThread({ ...thread, syncCursor: increment.cursor });
         }
       }
@@ -253,12 +253,12 @@ async function continueThread(
   if (input.model) {
     const desired = splitModel(input.model);
     if (desired.provider && desired.provider !== thread.provider) {
-      throw new Error("已有侧聊不能切换 provider：请用 /btw-new 新开线程再选其它 provider");
+      throw new Error("An existing side chat cannot switch provider. Use /btw-new to start a thread with another provider.");
     }
     if (desired.model !== thread.model) {
       const switched = await switchThreadModel(paseo, thread, desired.model);
       if (!switched.ok) {
-        throw new Error(`模型切换失败：${switched.error ?? "未知原因"}`);
+        throw new Error(`Model switch failed: ${switched.error ?? "unknown reason"}`);
       }
       nextModel = desired.model;
       console.log(`[bytheway] thread ${thread.id} model switched to ${nextModel}`);
@@ -276,7 +276,7 @@ async function continueThread(
     if (targetModeId) {
       const switched = await switchThreadMode(paseo, thread, targetModeId);
       if (!switched.ok) {
-        throw new Error(`模式切换失败：${switched.error ?? "未知原因"}`);
+        throw new Error(`Mode switch failed: ${switched.error ?? "unknown reason"}`);
       }
       console.log(`[bytheway] thread ${thread.id} agent mode switched to ${targetModeId}`);
     }
@@ -339,7 +339,7 @@ async function createThread(
       const tail = await fetchTranscriptTail(paseo, input.mainAgentId);
       attachments.push(
         textAttachment(
-          "主会话上下文快照.md",
+          "main-session-context.md",
           buildSnapshotText(tail, {
             messages: PASSIVE_SNAPSHOT_MESSAGES,
             includeDigest: settings.includeActionDigest,
@@ -353,7 +353,7 @@ async function createThread(
       const tail = await fetchTranscriptTail(paseo, input.mainAgentId);
       attachments.push(
         textAttachment(
-          "主会话上下文快照.md",
+          "main-session-context.md",
           buildSnapshotText(tail, {
             messages: settings.snapshotDepth,
             includeDigest: settings.includeActionDigest,
@@ -369,14 +369,14 @@ async function createThread(
   let prompt = input.question;
   if (input.seedFromAgentId) {
     if (input.contextMode.toolsAvailable) {
-      prompt = `${PROMPT_MARKERS.continuationPrefix}（用户更换了模型或模式）。请先调用 MCP 工具 get_agent_activity 读取 agent ${input.seedFromAgentId} 的最近活动，了解先前对话的结论与语气，${PROMPT_MARKERS.continuationQuestion}\n\n${input.question}`;
+      prompt = `${PROMPT_MARKERS.continuationPrefix} because the user changed the model or mode. First call the get_agent_activity MCP tool for agent ${input.seedFromAgentId} to learn the earlier conclusions and tone. ${PROMPT_MARKERS.continuationQuestion}\n\n${input.question}`;
     } else {
       try {
         const tail = await fetchTranscriptTail(paseo, input.seedFromAgentId, 80);
         attachments.push(
           textAttachment(
-            "接续速记.md",
-            `${PROMPT_MARKERS.previousThreadSummary}（接续用）：\n\n${buildSnapshotText(tail, {
+            "continuation-summary.md",
+            `${PROMPT_MARKERS.previousThreadSummary}:\n\n${buildSnapshotText(tail, {
               messages: 10,
               includeDigest: settings.includeActionDigest,
               budget: PASSIVE_SNAPSHOT_BUDGET,
@@ -390,7 +390,7 @@ async function createThread(
     }
   }
 
-  const title = `${input.mode === "work" ? "[侧聊·Build]" : "[侧聊]"} ${truncateOneLine(input.question)}`;
+  const title = `${input.mode === "work" ? "[ByTheWay Build]" : "[ByTheWay]"} ${truncateOneLine(input.question)}`;
   const handle = await paseo.workspaces.ref(input.workspaceId).agents.create({
     config: {
       provider: input.model ? `${input.provider}/${input.model}` : input.provider,
@@ -439,20 +439,20 @@ async function switchThreadModel(
   try {
     const helper = await paseo.workspaces.ref(thread.workspaceId).agents.create({
       config: { provider: thread.model ? `${thread.provider}/${thread.model}` : thread.provider },
-      title: "[侧聊·切换模型]",
+      title: "[ByTheWay model switch]",
       labels: { sidekick: "helper" },
     });
     try {
       const result = await helper.run(
-        `请调用 MCP 工具 update_agent，参数 agentId="${thread.agentId}"、model="${modelId}"，把该 agent 的模型切换为 ${modelId}。成功后只回复：done；如果 update_agent 工具不可用，只回复：tool-unavailable。`,
+        `Call the update_agent MCP tool with agentId="${thread.agentId}" and model="${modelId}". Reply only with done on success, or tool-unavailable if the tool is unavailable.`,
         { timeoutMs: 60_000 },
       );
       if ((result.lastMessage ?? "").toLowerCase().includes("tool-unavailable")) {
-        return { ok: false, error: "Paseo 工具不可用（需开启 daemon.mcp.injectIntoAgents）" };
+        return { ok: false, error: "Paseo tools are unavailable. Enable daemon.mcp.injectIntoAgents." };
       }
       const snapshot = await paseo.agents.ref(thread.agentId).refresh();
       if (snapshot?.agent.model === modelId) return { ok: true };
-      return { ok: false, error: `切换未生效（当前仍是 ${snapshot?.agent.model ?? "未知"}）` };
+      return { ok: false, error: `The switch did not take effect. Current model: ${snapshot?.agent.model ?? "unknown"}.` };
     } finally {
       void helper.archive().catch(() => {});
     }
@@ -470,20 +470,20 @@ async function switchThreadMode(
   try {
     const helper = await paseo.workspaces.ref(thread.workspaceId).agents.create({
       config: { provider: thread.model ? `${thread.provider}/${thread.model}` : thread.provider },
-      title: "[侧聊·切换模式]",
+      title: "[ByTheWay mode switch]",
       labels: { sidekick: "helper" },
     });
     try {
       const result = await helper.run(
-        `请调用 MCP 工具 set_agent_mode，参数 agentId="${thread.agentId}"、modeId="${modeId}"，把该 agent 的模式切换为 ${modeId}。成功后只回复：done；如果 set_agent_mode 工具不可用，只回复：tool-unavailable。`,
+        `Call the set_agent_mode MCP tool with agentId="${thread.agentId}" and modeId="${modeId}". Reply only with done on success, or tool-unavailable if the tool is unavailable.`,
         { timeoutMs: 60_000 },
       );
       if ((result.lastMessage ?? "").toLowerCase().includes("tool-unavailable")) {
-        return { ok: false, error: "Paseo 工具不可用（需开启 daemon.mcp.injectIntoAgents）" };
+        return { ok: false, error: "Paseo tools are unavailable. Enable daemon.mcp.injectIntoAgents." };
       }
       const snapshot = await paseo.agents.ref(thread.agentId).refresh();
       if (snapshot?.agent.currentModeId === modeId) return { ok: true };
-      return { ok: false, error: `切换未生效（当前仍是 ${snapshot?.agent.currentModeId ?? "未知"}）` };
+      return { ok: false, error: `The switch did not take effect. Current mode: ${snapshot?.agent.currentModeId ?? "unknown"}.` };
     } finally {
       void helper.archive().catch(() => {});
     }
@@ -500,7 +500,7 @@ function maybeGenerateTitle(paseo: PaseoApi, settings: SidekickSettings, record:
   if (!settings.aiTitles) return;
   const threadId = record.id;
   const baseTitle = record.title;
-  const question = baseTitle.replace(/^\[侧聊(·Build)?\]\s*/, "");
+  const question = baseTitle.replace(/^\[(?:侧聊|ByTheWay)(?:·Build| Build)?\]\s*/, "");
 
   // 标题生成模型：follow = 线程同款；或 "provider/model"
   const requestedTitleModel = settings.titleModel.trim();
@@ -520,12 +520,12 @@ function maybeGenerateTitle(paseo: PaseoApi, settings: SidekickSettings, record:
     try {
       const helper = await paseo.workspaces.ref(record.workspaceId).agents.create({
         config: { provider: titleModel ? `${titleProvider}/${titleModel}` : titleProvider },
-        title: "[侧聊·命名]",
+        title: "[ByTheWay title]",
         labels: { sidekick: "helper" },
       });
       try {
         const result = await helper.run(
-          `为下面这条侧聊问题生成一个简短标题（4~10 个汉字或等长短语，不要标点、不要引号，只输出标题本身）：\n\n${question}`,
+          `Create a short title for the following side-chat question. Use the same language as the question, 4 to 10 words at most, with no punctuation or quotation marks. Output only the title.\n\n${question}`,
           { timeoutMs: 60_000 },
         );
         const raw = (result.lastMessage ?? "").split("\n")[0]?.trim() ?? "";
@@ -551,13 +551,13 @@ function maybeGenerateTitle(paseo: PaseoApi, settings: SidekickSettings, record:
 export async function archiveThread(paseo: PaseoApi, threadId: string): Promise<void> {
   await registry.ensureLoaded();
   const thread = registry.getThread(threadId);
-  if (!thread) throw new Error("线程不存在");
+  if (!thread) throw new Error("Thread not found.");
   try {
     await paseo.agents.ref(thread.agentId).archive();
   } catch (error) {
     console.error("[bytheway] archive agent failed", message(error));
   }
-  registry.upsertThread({ ...thread, state: "stopped", stateReason: "已停止", updatedAt: Date.now() });
+  registry.upsertThread({ ...thread, state: "stopped", stateReason: "stopped", updatedAt: Date.now() });
 }
 
 export async function removeThread(paseo: PaseoApi, threadId: string): Promise<void> {
@@ -575,14 +575,14 @@ export async function removeThread(paseo: PaseoApi, threadId: string): Promise<v
 export async function renameThread(threadId: string, title: string): Promise<void> {
   await registry.ensureLoaded();
   const thread = registry.getThread(threadId);
-  if (!thread) throw new Error("线程不存在");
+  if (!thread) throw new Error("Thread not found.");
   registry.upsertThread({ ...thread, title: truncateOneLine(title, 120), updatedAt: Date.now() });
 }
 
 export async function pinThread(threadId: string, pinned: boolean): Promise<void> {
   await registry.ensureLoaded();
   const thread = registry.getThread(threadId);
-  if (!thread) throw new Error("线程不存在");
+  if (!thread) throw new Error("Thread not found.");
   registry.upsertThread({ ...thread, pinned, updatedAt: Date.now() });
 }
 
@@ -595,7 +595,7 @@ export async function rebuildThread(
 ): Promise<{ threadId: string; agentId: string }> {
   await registry.ensureLoaded();
   const thread = registry.getThread(threadId);
-  if (!thread) throw new Error("线程不存在");
+  if (!thread) throw new Error("Thread not found.");
 
   const contextMode = await resolveContextMode(paseo, settings);
   let provider = thread.provider;
@@ -628,8 +628,8 @@ export async function rebuildThread(
     passive: contextMode.passive,
   });
   const seed = contextMode.toolsAvailable
-    ? `${PROMPT_MARKERS.rebuildPrefix}。请先调用 MCP 工具 get_agent_activity 读取 agent ${oldAgentId} 的最近活动，了解该线程此前的问答与结论，继承其上下文与语气。${PROMPT_MARKERS.rebuildQuestion}\n\n${question?.trim() || PROMPT_MARKERS.emptyRebuildSummary}`
-    : `${PROMPT_MARKERS.rebuildPrefix}。\n\n${question?.trim() || PROMPT_MARKERS.emptyRebuildWait}`;
+    ? `${PROMPT_MARKERS.rebuildPrefix}. First call the get_agent_activity MCP tool for agent ${oldAgentId} to learn the earlier questions, answers, conclusions, context, and tone. ${PROMPT_MARKERS.rebuildQuestion}\n\n${question?.trim() || PROMPT_MARKERS.emptyRebuildSummary}`
+    : `${PROMPT_MARKERS.rebuildPrefix}.\n\n${question?.trim() || PROMPT_MARKERS.emptyRebuildWait}`;
 
   const attachments: OutgoingTextAttachment[] = [];
   if (!contextMode.toolsAvailable) {
@@ -637,8 +637,8 @@ export async function rebuildThread(
       const tail = await fetchTranscriptTail(paseo, oldAgentId, 80);
       attachments.push(
         textAttachment(
-          "旧线程速记.md",
-          `${PROMPT_MARKERS.rebuiltThreadSummary}（可能不完整）：\n\n${buildSnapshotText(tail, {
+          "previous-thread-summary.md",
+          `${PROMPT_MARKERS.rebuiltThreadSummary} (may be incomplete):\n\n${buildSnapshotText(tail, {
             messages: 12,
             includeDigest: settings.includeActionDigest,
             budget: PASSIVE_SNAPSHOT_BUDGET,
@@ -689,16 +689,16 @@ export async function cancelThread(
 ): Promise<{ requested: boolean; note: string }> {
   await registry.ensureLoaded();
   const thread = registry.getThread(threadId);
-  if (!thread) throw new Error("线程不存在");
+  if (!thread) throw new Error("Thread not found.");
   const snapshot = await paseo.agents.ref(thread.agentId).refresh();
   if (!snapshot || snapshot.agent.status !== "running") {
-    return { requested: false, note: "侧聊当前不在运行中" };
+    return { requested: false, note: "The side chat is not running." };
   }
   try {
     const helper = await paseo.workspaces.ref(thread.workspaceId).agents.create({
       config: { provider: thread.model ? `${thread.provider}/${thread.model}` : thread.provider },
-      title: "[侧聊·取消辅助]",
-      prompt: `请调用 MCP 工具 cancel_agent，参数 agentId=${thread.agentId}，中止该 agent 的当前运行。成功后回复 done；如果工具不可用请回复 tool-unavailable。`,
+      title: "[ByTheWay cancel helper]",
+      prompt: `Call the cancel_agent MCP tool with agentId=${thread.agentId} to stop the agent's current turn. Reply with done on success, or tool-unavailable if the tool is unavailable.`,
       labels: { sidekick: "helper" },
     });
     // 辅助 agent 用完即弃（90 秒后归档，尽力而为）
@@ -707,9 +707,9 @@ export async function cancelThread(
       void paseo.agents.ref(helperId).archive().catch(() => {});
     }, 90_000);
   } catch (error) {
-    return { requested: false, note: `辅助取消发起失败：${message(error)}` };
+    return { requested: false, note: `Failed to request helper cancellation: ${message(error)}` };
   }
-  return { requested: true, note: "已发起取消请求（实验性）；5 秒未生效请在标签页中停止" };
+  return { requested: true, note: "Cancellation requested. If it does not take effect in 5 seconds, stop the agent from its tab." };
 }
 
 export async function sendToMain(
@@ -720,7 +720,7 @@ export async function sendToMain(
 ): Promise<{ behavior: "steer" | "send" }> {
   await registry.ensureLoaded();
   const thread = registry.getThread(threadId);
-  if (!thread) throw new Error("线程不存在");
+  if (!thread) throw new Error("Thread not found.");
   const snapshot = await paseo.agents.ref(thread.mainAgentId).refresh();
   const running = snapshot?.agent.status === "running";
   const useSteer = behavior === "steer" || (behavior === "auto" && running);
@@ -754,7 +754,7 @@ export async function previewContext(
       const tail = await fetchTranscriptTail(paseo, input.mainAgentId);
       attachments.push(
         textAttachment(
-          "主会话上下文快照.md",
+          "main-session-context.md",
           buildSnapshotText(tail, {
             messages: PASSIVE_SNAPSHOT_MESSAGES,
             includeDigest: settings.includeActionDigest,
@@ -767,7 +767,7 @@ export async function previewContext(
       const tail = await fetchTranscriptTail(paseo, input.mainAgentId);
       attachments.push(
         textAttachment(
-          "主会话上下文快照.md",
+          "main-session-context.md",
           buildSnapshotText(tail, {
             messages: settings.snapshotDepth,
             includeDigest: settings.includeActionDigest,
@@ -846,10 +846,10 @@ export async function refreshThreadStates(
         const snapshot = await paseo.agents.ref(thread.agentId).refresh();
         const agent = snapshot?.agent;
         if (!agent) {
-          registry.upsertThread({ ...thread, state: "stopped", stateReason: "会话不存在" });
+          registry.upsertThread({ ...thread, state: "stopped", stateReason: "session unavailable" });
           statuses[thread.id] = "closed";
         } else if (agent.archivedAt) {
-          registry.upsertThread({ ...thread, state: "stopped", stateReason: "已归档" });
+          registry.upsertThread({ ...thread, state: "stopped", stateReason: "archived" });
           statuses[thread.id] = "closed";
         } else {
           statuses[thread.id] = agent.status;

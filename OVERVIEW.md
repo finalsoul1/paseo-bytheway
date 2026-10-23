@@ -45,7 +45,7 @@ Each side thread is backed by a temporary agent in the same workspace:
 
 ## Settings
 
-Settings → Plugins → ByTheWay 侧聊:
+Settings -> Plugins -> ByTheWay:
 
 - Default mode (Chat / Build) and default model (follow the main session or fixed
   provider/model); new threads also inherit the main session's thinking level and

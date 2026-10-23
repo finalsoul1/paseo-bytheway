@@ -139,7 +139,7 @@ async function main(): Promise<void> {
     } catch (error) {
       stoppedError = error instanceof Error ? error.message : String(error);
     }
-    if (!/停止/.test(stoppedError)) fail(`stopped 线程应报错，实际: ${stoppedError}`);
+    if (!/(stopped|停止)/i.test(stoppedError)) fail(`stopped thread should report an error, got: ${stoppedError}`);
     console.log(`[3] stopped thread error ok: ${stoppedError}`);
 
     // 4. 重建并继续

@@ -25,7 +25,7 @@ import { useThreadStream } from "./live/store";
 import { LiveItemView, PermissionBanner, TurnStatusLine } from "./transcript/items";
 
 /** 反馈入口：GitHub 新建 issue（提问题 / 提功能）。 */
-const FEEDBACK_URL = "https://github.com/CasonMo/paseo-bytheway/issues/new";
+const FEEDBACK_URL = "https://github.com/finalsoul1/paseo-bytheway/issues/new";
 
 function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -45,7 +45,7 @@ function modeLabel(mode: "ask" | "work"): string {
 
 /** Tab / 列表里展示时去掉标题前缀。 */
 function stripThreadPrefix(title: string): string {
-  return title.replace(/^\[侧聊(·Build)?\]\s*/, "");
+  return title.replace(/^\[(?:侧聊|ByTheWay)(?:·Build| Build)?\]\s*/, "");
 }
 
 interface ModelOption {
@@ -920,7 +920,9 @@ export function SidekickPanel({ theme, layout, host, agentId, navigation }: Plug
           </View>
         ) : selected.state !== "open" ? (
           <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24, gap: 8 }}>
-            <Text style={{ color: theme.colors.foreground, fontSize: 13 }}>{t.stoppedThread(selected.stateReason ?? t.statusStopped)}</Text>
+            <Text style={{ color: theme.colors.foreground, fontSize: 13 }}>
+              {t.stoppedThread(localizeServerMessage(selected.stateReason ?? t.statusStopped, locale))}
+            </Text>
             <Text style={{ color: theme.colors.foregroundMuted, fontSize: 11.5 }}>
               {t.stoppedThreadHint}
             </Text>

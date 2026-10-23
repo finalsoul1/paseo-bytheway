@@ -35,6 +35,16 @@ describe("extractInitialPrompt", () => {
     ).toBe("新模型下继续分析这个问题");
   });
 
+  it("extracts the user question from the English continuation wrapper", () => {
+    expect(
+      extractInitialPrompt(
+        tool(
+          "This side thread continues an earlier thread because the user changed the model. Then handle this request:\n\nContinue reviewing the bug",
+        ),
+      ),
+    ).toBe("Continue reviewing the bug");
+  });
+
   it("extracts the user question from an active rebuild wrapper", () => {
     expect(
       extractInitialPrompt(

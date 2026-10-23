@@ -258,7 +258,7 @@ function applyStream(state: LiveState, event: StreamEvent): LiveState {
         kind: "notice",
         key: liveKey(state),
         level: "info",
-        message: `已取消（${event.reason}）`,
+        message: `Canceled (${event.reason})`,
       });
       return finishTurn(next, "canceled");
     }

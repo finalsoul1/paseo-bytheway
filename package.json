@@ -1,9 +1,10 @@
 {
   "name": "paseo-bytheway",
-  "version": "0.1.9",
+  "version": "0.2.0",
   "files": [
     "paseo-plugin.json",
     "OVERVIEW.md",
+    "OVERVIEW.ko-KR.md",
     "OVERVIEW.zh-CN.md",
     "README.md",
     "LICENSE",
@@ -16,7 +17,7 @@
   ],
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run --config vitest.config.mjs",
     "smoke": "tsx scripts/smoke.ts",
     "title-check": "tsx scripts/title-check.ts",
     "continuation-check": "tsx scripts/continuation-check.ts",
@@ -37,10 +38,10 @@
     "vitest": "^4.1.6",
     "zod": "^4.4.3"
   },
-  "description": "ByTheWay (btw) · 旁路侧聊：/btw 提问、/side 执行任务，首条提问回显、实时执行流、多线程、agent 直连上下文、模型对比 / ByTheWay (btw) side chats: use /btw to ask and /side to run tasks, with original-prompt recall, live execution stream, threads, agent-linked context, model comparison",
+  "description": "Side chats for Paseo: use /btw to ask questions and /side to run small tasks without interrupting the main session.",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/CasonMo/paseo-bytheway.git"
+    "url": "git+https://github.com/finalsoul1/paseo-bytheway.git"
   }
 }

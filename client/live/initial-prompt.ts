@@ -7,16 +7,24 @@ const CONTEXT_MARKERS = [
   PROMPT_MARKERS.mainIncrement,
   PROMPT_MARKERS.previousThreadSummary,
   PROMPT_MARKERS.rebuiltThreadSummary,
+  "以下为主会话的最近上下文快照",
+  "以下为主会话的新进展",
+  "以下为前一条侧聊线程的历史摘要",
+  "以下为该侧聊线程被重建前的历史摘要",
 ];
 
 const WRAPPERS = [
   { prefix: PROMPT_MARKERS.continuationPrefix, questionMarker: PROMPT_MARKERS.continuationQuestion },
   { prefix: PROMPT_MARKERS.rebuildPrefix, questionMarker: PROMPT_MARKERS.rebuildQuestion },
+  { prefix: "这是一条接续的侧聊线程", questionMarker: "然后处理：" },
+  { prefix: "这是一条被重建的侧聊线程", questionMarker: "然后继续处理：" },
 ];
 
 const EMPTY_REBUILD_QUESTIONS = new Set<string>([
   PROMPT_MARKERS.emptyRebuildSummary,
   PROMPT_MARKERS.emptyRebuildWait,
+  "（请简短总结此前的结论，然后等待用户的下一个问题。）",
+  "（请等待用户的下一个问题。）",
 ]);
 
 /** Compare prompt text without treating formatting whitespace as meaningful. */
@@ -50,7 +58,7 @@ export function extractInitialPrompt(item: unknown): string | null {
     if (index >= 0) {
       prompt = prompt.slice(index + wrapper.questionMarker.length).trim();
     } else {
-      // Passive rebuild uses: "这是一条被重建的侧聊线程。" + question.
+      // Passive rebuild uses the wrapper prefix followed by the question.
       prompt = prompt.slice(wrapper.prefix.length).replace(/^[\s。.!！]+/, "").trim();
     }
     break;

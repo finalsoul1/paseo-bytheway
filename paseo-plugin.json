@@ -1,7 +1,21 @@
 {
   "id": "paseo-bytheway",
-  "name": "ByTheWay 侧聊",
-  "description": "ByTheWay (btw) · 旁路侧聊：/btw 提问、/side 执行任务，首条提问回显、实时执行流、多线程、agent 直连上下文、模型对比 / ByTheWay (btw) side chats: use /btw to ask and /side to run tasks, with original-prompt recall, live execution stream, threads, agent-linked context, model comparison",
+  "name": "ByTheWay",
+  "description": "Side chats for Paseo: use /btw to ask questions and /side to run small tasks without interrupting the main session.",
+  "translations": {
+    "ko": {
+      "name": "ByTheWay 보조 대화",
+      "description": "주 대화를 방해하지 않고 /btw로 질문하거나 /side로 작은 작업을 실행합니다."
+    },
+    "ko-KR": {
+      "name": "ByTheWay 보조 대화",
+      "description": "주 대화를 방해하지 않고 /btw로 질문하거나 /side로 작은 작업을 실행합니다."
+    },
+    "zh-CN": {
+      "name": "ByTheWay 侧聊",
+      "description": "使用 /btw 提问或 /side 执行小任务，不打断 Paseo 主会话。"
+    }
+  },
   "requirements": {
     "paseo": ">=0.13.0-beta.1"
   },

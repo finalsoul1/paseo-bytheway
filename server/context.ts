@@ -61,7 +61,7 @@ const CHANGE_SHELL_RE =
   /(^|\s|\||;|&&)(rm|mv|cp|mkdir|touch|chmod|chown|kill|pkill|git\s+(commit|push|merge|rebase|reset|checkout|switch|add)|npm\s+(install|i|publish|uninstall)|pnpm|yarn|cargo|go\s+(build|test|run)|make|docker|kubectl|curl|wget|ssh|scp|git\s+stash)/i;
 
 function toolUnit(item: Extract<TimelineItem, { type: "tool_call" }>): TranscriptUnit {
-  const failed = item.status === "failed" ? "（失败）" : item.status === "canceled" ? "（取消）" : "";
+  const failed = item.status === "failed" ? " (failed)" : item.status === "canceled" ? " (canceled)" : "";
   const detail = item.detail;
   let line: string;
   let tier: ToolTier = "minor";
@@ -90,7 +90,7 @@ function toolUnit(item: Extract<TimelineItem, { type: "tool_call" }>): Transcrip
       break;
     }
     case "search": {
-      line = `- [search] ${detail.query}${detail.content ? "（有结果）" : ""}${failed}`;
+      line = `- [search] ${detail.query}${detail.content ? " (results found)" : ""}${failed}`;
       tier = "info";
       break;
     }
@@ -170,7 +170,7 @@ export function buildSnapshotText(
   let used = 0;
   for (let i = recent.length - 1; i >= 0; i -= 1) {
     const unit = recent[i];
-    const role = unit.kind === "user" ? "用户" : "助手";
+    const role = unit.kind === "user" ? "User" : "Assistant";
     const rendered = `${role}: ${truncate(unit.text, MAX_CHARS_PER_MESSAGE)}`;
     if (used + rendered.length > budget && lines.length > 0) break;
     used += rendered.length;
@@ -179,15 +179,15 @@ export function buildSnapshotText(
 
   const digestLines = options.includeDigest ? buildDigestLines(tail.units) : [];
   const parts: string[] = [
-    `${PROMPT_MARKERS.mainSnapshot}（生成于 ${new Date().toISOString()}）。${
+    `${PROMPT_MARKERS.mainSnapshot} (generated at ${new Date().toISOString()}). ${
       options.passive
-        ? "本线程处于被动同步模式：后续主会话有新的进展时，系统会自动在消息中附上增量更新。"
-        : "如需主会话的最新进展，请调用 get_agent_activity 工具按需查询。"
+        ? "This thread uses passive sync. New main-session activity will be attached to later messages."
+        : "Use get_agent_activity when you need the latest activity from the main session."
     }`,
   ];
-  if (lines.length > 0) parts.push(`### 最近消息\n${lines.join("\n\n")}`);
-  if (digestLines.length > 0) parts.push(`### 最近动作\n${digestLines.join("\n")}`);
-  if (lines.length === 0 && digestLines.length === 0) parts.push("（主会话暂无可用记录，请直接根据问题回答。）");
+  if (lines.length > 0) parts.push(`### Recent messages\n${lines.join("\n\n")}`);
+  if (digestLines.length > 0) parts.push(`### Recent actions\n${digestLines.join("\n")}`);
+  if (lines.length === 0 && digestLines.length === 0) parts.push("No main-session history is available. Answer from the user's question.");
   return parts.join("\n\n");
 }
 
@@ -218,15 +218,15 @@ export function buildIncrementText(
   let used = 0;
   for (let i = freshMessages.length - 1; i >= 0; i -= 1) {
     const unit = freshMessages[i];
-    const role = unit.kind === "user" ? "用户" : "助手";
+    const role = unit.kind === "user" ? "User" : "Assistant";
     const rendered = `${role}: ${truncate(unit.text, 1000)}`;
     if (used + rendered.length > INCREMENT_BUDGET && lines.length > 0) break;
     used += rendered.length;
     lines.unshift(rendered);
   }
-  const parts = [`${PROMPT_MARKERS.mainIncrement}（增量更新，生成于 ${new Date().toISOString()}）。`];
+  const parts = [`${PROMPT_MARKERS.mainIncrement} (generated at ${new Date().toISOString()}).`];
   if (lines.length > 0) parts.push(lines.join("\n\n"));
-  if (digestLines.length > 0) parts.push(`### 新动作\n${digestLines.join("\n")}`);
+  if (digestLines.length > 0) parts.push(`### New actions\n${digestLines.join("\n")}`);
   return {
     text: parts.join("\n\n"),
     cursor: { unitsSeen: tail.units.length, messagesSeen: tail.messagesSeen },
@@ -247,19 +247,19 @@ export interface SystemPromptOptions {
 export function buildSystemPrompt(options: SystemPromptOptions): string {
   const { mainAgentId, mode, toolsAvailable, passive } = options;
   const contextLine = toolsAvailable
-    ? `主会话的 agent id 是 ${mainAgentId}。当你需要了解主会话的最新进展（用户正在做什么、最近改了什么）时，调用 MCP 工具 get_agent_activity（传入该 id）读取其最近活动摘要；需要状态时用 get_agent_status。不要凭空猜测主会话的内容。`
+    ? `The main session agent id is ${mainAgentId}. Use the get_agent_activity MCP tool with this id when you need its latest activity, and get_agent_status when you need its state. Do not guess the main session's content.`
     : passive
-      ? `主会话的上下文会由系统以附件形式同步给你（被动同步模式），最近进展以附件为准。`
-      : `回答时如缺少主会话信息，请明确说明而不猜测。`;
+      ? "The system provides main-session context as attachments through passive sync. Treat the latest attachment as authoritative."
+      : "If main-session information is missing, say so instead of guessing.";
   const modeLine =
     mode === "ask"
-      ? "你处于只读建议模式：不要修改文件、不要执行有副作用的命令；可以读取文件与搜索，用于给出准确的回答。"
-      : "你可以执行任务所需的操作；保持改动最小、聚焦，不做无关重构。";
+      ? "You are in read-only advice mode. Do not modify files or run commands with side effects. You may read files and search to provide an accurate answer."
+      : "You may perform the actions needed for the task. Keep changes minimal and focused, and avoid unrelated refactoring.";
   return [
-    "你是 Paseo「侧聊（ByTheWay）」会话：用户在自己的主会话之外向你提出旁路问题或小任务；你的回答只展示给用户，不会自动写入主会话。",
+    "You are a Paseo ByTheWay side session. The user asks a question or assigns a small task alongside their main session. Your answer is shown to the user and is not written into the main session automatically.",
     contextLine,
     modeLine,
-    "回答保持聚焦、简洁、结构清晰，使用与用户问题相同的语言。",
+    "Keep the answer focused, concise, and clear. Use the same language as the user's question.",
   ].join("\n");
 }
 

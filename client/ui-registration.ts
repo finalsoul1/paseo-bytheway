@@ -33,7 +33,7 @@ export function registerSidekickUi(context: PluginClientContext): () => void {
       id: "bytheway-open",
       title: messages.message("reg.cmdOpenPanel"),
       icon: "MessagesSquare",
-      keywords: ["sidekick", "btw", "side", "侧聊", "旁路"],
+      keywords: ["sidekick", "btw", "side", "보조 대화", "병렬"],
       context: "agent",
       onSelect({ openPanel }) {
         openPanel("bytheway", { location: "explorer" });
@@ -46,7 +46,7 @@ export function registerSidekickUi(context: PluginClientContext): () => void {
       id: "bytheway-open-settings",
       title: messages.message("reg.cmdSettings"),
       icon: "Settings2",
-      keywords: ["sidekick", "侧聊", "设置"],
+      keywords: ["sidekick", "보조 대화", "설정"],
       context: "global",
       onSelect({ openSettings }) {
         openSettings("bytheway-settings");
@@ -115,11 +115,11 @@ export function registerSidekickUi(context: PluginClientContext): () => void {
           limit: 200,
           projection: "canonical",
         });
-        const lines: string[] = [`以下是从会话「${agent.title ?? agent.id}」克隆的对话记录：`];
+        const lines: string[] = [`Transcript cloned from session "${agent.title ?? agent.id}":`];
         for (const entry of page.entries) {
           const item = entry.item;
-          if (item.type === "user_message") lines.push(`用户: ${item.text}`);
-          else if (item.type === "assistant_message") lines.push(`助手: ${item.text}`);
+          if (item.type === "user_message") lines.push(`User: ${item.text}`);
+          else if (item.type === "assistant_message") lines.push(`Assistant: ${item.text}`);
         }
         await paseo.workspaces.ref(agent.workspaceId).agents.create({
           config: {
@@ -131,7 +131,7 @@ export function registerSidekickUi(context: PluginClientContext): () => void {
             {
               type: "text",
               mimeType: "text/plain",
-              title: `会话记录-${agent.title ?? agent.id}`,
+              title: `session-transcript-${agent.title ?? agent.id}`,
               text: lines.join("\n\n"),
             },
           ],

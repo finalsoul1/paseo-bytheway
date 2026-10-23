@@ -35,7 +35,7 @@ export function registerPermissionAutoHandlers(
         await ref
           .respondToPermission({
             requestId: event.request.id,
-            response: { behavior: "deny", message: "侧聊权限策略为全部拒绝（可在设置中调整）" },
+            response: { behavior: "deny", message: "The side-chat permission policy denies all requests. You can change it in settings." },
           })
           .catch(() => {});
         return;
@@ -57,7 +57,7 @@ export function registerPermissionAutoHandlers(
             if (!pending.some((entry) => entry.id === event.request.id)) return; // 已被处理
             await paseo.agents.ref(agentId).respondToPermission({
               requestId: event.request.id,
-              response: { behavior: "deny", message: "侧聊权限请求超时未处理，已自动拒绝（可在面板重新发起）" },
+              response: { behavior: "deny", message: "The side-chat permission request timed out and was denied. You can retry it from the panel." },
             });
           } catch {
             // 会话可能已结束

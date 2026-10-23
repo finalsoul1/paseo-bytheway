@@ -1,7 +1,7 @@
 import { isNewer, PLUGIN_VERSION } from "../shared/meta";
 
 const CACHE_MS = 60 * 60 * 1000;
-const RAW = "https://raw.githubusercontent.com/CasonMo/paseo-bytheway/main";
+const RAW = "https://raw.githubusercontent.com/finalsoul1/paseo-bytheway/main";
 
 let cache: { at: number; latest: string; requiredPaseo: string | null } | null = null;
 

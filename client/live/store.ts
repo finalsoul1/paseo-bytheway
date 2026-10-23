@@ -287,7 +287,7 @@ export function useThreadStream(agentId: string | null): ThreadStreamControls {
               });
               return;
             case "error":
-              dispatch({ type: "error", error: String(e.event.error ?? "订阅异常") });
+              dispatch({ type: "error", error: String(e.event.error ?? "Subscription error") });
               void subscription?.release();
               subscription = null;
               scheduleRetry();
