@@ -20,7 +20,7 @@ Paseo의 주 agent가 작업하는 동안 별도로 질문하거나 작은 작�
 - Command Center에서 ByTheWay panel과 설정을 열 수 있습니다.
 - 대화 탭의 닫기 버튼은 해당 보조 agent를 보관합니다.
 - Desktop에서는 Enter로 보내고 Shift+Enter로 줄을 바꿉니다.
-- Paseo 언어가 한국어이면 panel, 명령과 설정을 한국어로 표시합니다.
+- Paseo 언어가 한국어이면 panel, 명령, 설정과 AI가 생성한 대화 제목을 한국어로 표시합니다. 제목 생성 model이 한자를 반환하면 해당 제목을 저장하지 않습니다.
 
 ## 설정
 

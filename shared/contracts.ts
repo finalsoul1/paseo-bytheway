@@ -73,6 +73,7 @@ export const threadsAsk = defineRpc({
       ])
       .default({ kind: "continue" }),
     model: z.string().min(1).max(200).optional(),
+    locale: z.string().min(1).max(35).optional(),
     thinkingOptionId: z.string().min(1).max(200).nullable().optional(),
     /** 换模型/模式新开线程时：接续的旧线程 agent id（新线程会读取其上下文）。 */
     continuationOf: z.string().min(1).optional(),
@@ -168,4 +169,3 @@ export const updateCheck = defineRpc({
     requiredPaseo: z.string().nullable(),
   }),
 });
-

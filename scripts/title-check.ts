@@ -28,13 +28,14 @@ async function main(): Promise<void> {
     candidates.find((entry: { agent: { cwd?: string } }) => entry.agent.cwd === process.cwd()) ??
     candidates[0]
   )?.agent;
-  if (!main) throw new Error("找不到可用作主会话的 agent");
+  if (!main) throw new Error("No main agent is available for the title check.");
 
   const settings = sidekickSettings.schema.parse({ attachToMain: false, snapshotDepth: 6 });
   const result = await askThread(client, settings, {
     mainAgentId: main.id,
-    question: "帮我评估一下把侧聊线程的标题改成 AI 自动生成的方案有什么利弊？",
+    question: "AI가 생성하는 보조 대화 제목의 장단점을 알려줘",
     mode: "ask",
+    locale: "ko-KR",
     target: { kind: "new" },
   });
   const initial = getThread(result.threadId)?.title ?? "";
@@ -52,7 +53,8 @@ async function main(): Promise<void> {
     }
   }
   console.log("final title:", title);
-  console.log(title !== initial && !title.startsWith("[侧聊]") ? "TITLE OK" : "TITLE UNCHANGED");
+  const hasHan = /\p{Script=Han}/u.test(title);
+  console.log(title !== initial && !hasHan ? "TITLE OK" : "TITLE UNCHANGED");
 
   await removeThread(client, result.threadId);
   console.log("cleaned");

@@ -86,6 +86,7 @@ export function registerSidekickUi(context: PluginClientContext): () => void {
               mainAgentId: agent.id,
               question,
               mode,
+              locale: context.i18n.locale,
               target: kind === "new" ? { kind: "new" } : { kind: "continue" },
               clientRequestId: newRequestId(),
             });

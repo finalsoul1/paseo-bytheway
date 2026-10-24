@@ -4,6 +4,7 @@ import type { TextAttachment, ThreadRuntimeStatus } from "../shared/contracts";
 import type { SidekickSettings } from "../shared/settings";
 import type { ThreadMode, ThreadRecord } from "../shared/types";
 import { resolveSendBehavior, type AppliedBehavior } from "../shared/send-behavior";
+import { normalizeGeneratedTitle, titleLanguageInstruction } from "../shared/thread-title";
 import {
   buildIncrementText,
   buildSnapshotText,
@@ -110,6 +111,7 @@ export interface AskInput {
   mode: ThreadMode;
   target: { kind: "continue"; threadId?: string } | { kind: "new" };
   model?: string;
+  locale?: string;
   thinkingOptionId?: string | null;
   continuationOf?: string;
   clientRequestId?: string;
@@ -185,6 +187,7 @@ export async function askThread(paseo: PaseoApi, settings: SidekickSettings, inp
     thinkingOptionId: inheritedThinkingOptionId,
     featureValues: inheritedFeatureValues,
     question: input.question,
+    locale: input.locale,
     contextMode,
     seedFromAgentId: input.continuationOf ?? null,
   });
@@ -311,6 +314,7 @@ interface CreateThreadInput {
   /** 从主会话继承的 provider features（如 opencode auto_accept）。 */
   featureValues: Record<string, unknown>;
   question: string;
+  locale?: string;
   contextMode: ContextModeInfo;
   seedFromAgentId: string | null;
 }
@@ -426,7 +430,7 @@ async function createThread(
   };
   registry.upsertThread(record);
   console.log(`[bytheway] thread ${threadId} created (agent ${handle.id}, mode=${input.mode})`);
-  maybeGenerateTitle(paseo, settings, record);
+  maybeGenerateTitle(paseo, settings, record, input.locale);
   return record;
 }
 
@@ -496,7 +500,12 @@ async function switchThreadMode(
  * 异步为线程生成简短标题：创建隐藏的临时 agent，用线程同款 provider/model 生成；
  * 仅在用户未手动改名（标题仍是最初的截断提问）时覆盖。
  */
-function maybeGenerateTitle(paseo: PaseoApi, settings: SidekickSettings, record: ThreadRecord): void {
+function maybeGenerateTitle(
+  paseo: PaseoApi,
+  settings: SidekickSettings,
+  record: ThreadRecord,
+  locale?: string,
+): void {
   if (!settings.aiTitles) return;
   const threadId = record.id;
   const baseTitle = record.title;
@@ -525,11 +534,10 @@ function maybeGenerateTitle(paseo: PaseoApi, settings: SidekickSettings, record:
       });
       try {
         const result = await helper.run(
-          `Create a short title for the following side-chat question. Use the same language as the question, 4 to 10 words at most, with no punctuation or quotation marks. Output only the title.\n\n${question}`,
+          `Create a short title for the following side-chat question. ${titleLanguageInstruction(locale)} Use 4 to 10 words at most, with no punctuation or quotation marks. Output only the title.\n\n${question}`,
           { timeoutMs: 60_000 },
         );
-        const raw = (result.lastMessage ?? "").split("\n")[0]?.trim() ?? "";
-        const title = raw.replace(/^[“”"'「」【\s]+|[“”"'「」【\s]+$/g, "").slice(0, 30);
+        const title = normalizeGeneratedTitle(question, result.lastMessage ?? "", locale);
         const current = registry.getThread(threadId);
         if (title && current && current.title === baseTitle) {
           registry.upsertThread({ ...current, title });

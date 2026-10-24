@@ -410,6 +410,7 @@ export function SidekickPanel({ theme, layout, host, agentId, navigation }: Plug
               mainAgentId: agentId,
               question,
               mode,
+              locale,
               target: willContinue && selected ? { kind: "continue", threadId: selected.id } : { kind: "new" },
               model: modelOverride ?? undefined,
               continuationOf:
@@ -429,7 +430,7 @@ export function SidekickPanel({ theme, layout, host, agentId, navigation }: Plug
     } finally {
       setSending(false);
     }
-  }, [input, sending, askRpc, rebuildRpc, agentId, mode, willContinue, selected, modelOverride, refresh, toast, t]);
+  }, [input, sending, askRpc, rebuildRpc, agentId, mode, locale, willContinue, selected, modelOverride, refresh, toast, t]);
 
   // 对齐 Paseo 主输入框：web 上 Enter 发送、Shift+Enter 换行（跳过 IME 组字）
   const onComposerKeyPress = useCallback(

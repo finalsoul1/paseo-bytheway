@@ -57,7 +57,7 @@ paseo plugin logs paseo-bytheway
 - 여러 보조 대화를 만들고 전환하거나, 대화 이름을 바꾸고 보관할 수 있습니다.
 - 첫 요청에는 주 대화의 최근 context를 전달하고, 이후에는 주 agent의 최신 진행 상황을 연결합니다.
 - 새 대화는 다른 provider와 model을 선택할 수 있습니다. 기존 대화는 같은 provider 안에서 model을 바꿀 수 있습니다.
-- Paseo 언어가 한국어이면 panel, 명령과 설정을 한국어로 표시합니다.
+- Paseo 언어가 한국어이면 panel, 명령, 설정과 AI가 생성한 대화 제목을 한국어로 표시합니다. 한국어 제목에 한자가 섞이면 저장하지 않습니다.
 - Desktop에서는 Enter로 보내고 Shift+Enter로 줄을 바꿉니다.
 
 ## Context 동작
@@ -99,7 +99,7 @@ paseo plugin logs paseo-bytheway
 - 기존 대화는 같은 provider 안에서만 model을 변경할 수 있습니다.
 - AI 제목 생성, 취소, model 또는 mode 전환 과정에서 짧게 실행되는 helper agent가 만들어질 수 있습니다.
 - 동시 실행 제한을 넘으면 실행 중인 작업이 끝날 때까지 새 요청을 시작할 수 없습니다.
-- 이전 버전에서 만든 대화 제목은 기존 접두사를 유지합니다. 새 대화부터 `ByTheWay` 접두사를 사용합니다.
+- 이전 버전에서 만든 대화 제목은 그대로 유지됩니다. 새 대화부터 한국어 제목과 `ByTheWay` 접두사를 사용합니다.
 
 ## 개발
 

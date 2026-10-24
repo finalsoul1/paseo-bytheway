@@ -5,11 +5,11 @@
   "translations": {
     "ko": {
       "name": "ByTheWay 보조 대화",
-      "description": "주 대화를 방해하지 않고 /btw로 질문하거나 /side로 작은 작업을 실행합니다."
+      "description": "주 대화를 방해하지 않고 /btw로 질문하거나 /side로 작은 작업을 실행하며 UI와 AI 제목을 한국어로 표시합니다."
     },
     "ko-KR": {
       "name": "ByTheWay 보조 대화",
-      "description": "주 대화를 방해하지 않고 /btw로 질문하거나 /side로 작은 작업을 실행합니다."
+      "description": "주 대화를 방해하지 않고 /btw로 질문하거나 /side로 작은 작업을 실행하며 UI와 AI 제목을 한국어로 표시합니다."
     },
     "zh-CN": {
       "name": "ByTheWay 侧聊",

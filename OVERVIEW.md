@@ -40,6 +40,7 @@ Each side thread is backed by a temporary agent in the same workspace:
   Send); pressing Enter still interrupts the current answer and starts a fresh turn with
   the new message (a toast confirms);
 - Assistant text uses the host Markdown renderer; the UI language follows the Paseo app language;
+- AI-generated thread titles follow the app language. Korean titles containing Han characters are rejected;
 - The panel shows a banner when a newer plugin version is available on GitHub main, including
   the required Paseo version (apply with `paseo plugin update paseo-bytheway` in a terminal).
 
