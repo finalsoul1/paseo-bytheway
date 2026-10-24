@@ -4,7 +4,7 @@ import type { TextAttachment, ThreadRuntimeStatus } from "../shared/contracts";
 import type { SidekickSettings } from "../shared/settings";
 import type { ThreadMode, ThreadRecord } from "../shared/types";
 import { resolveSendBehavior, type AppliedBehavior } from "../shared/send-behavior";
-import { normalizeGeneratedTitle, titleLanguageInstruction } from "../shared/thread-title";
+import { titleLanguageInstruction } from "../shared/thread-title";
 import {
   buildIncrementText,
   buildSnapshotText,
@@ -537,7 +537,8 @@ function maybeGenerateTitle(
           `Create a short title for the following side-chat question. ${titleLanguageInstruction(locale)} Use 4 to 10 words at most, with no punctuation or quotation marks. Output only the title.\n\n${question}`,
           { timeoutMs: 60_000 },
         );
-        const title = normalizeGeneratedTitle(question, result.lastMessage ?? "", locale);
+        const raw = (result.lastMessage ?? "").split("\n")[0]?.trim() ?? "";
+        const title = raw.replace(/^[\u201c\u201d"'\u300c\u300d\u3010\s]+|[\u201c\u201d"'\u300c\u300d\u3010\s]+$/g, "").slice(0, 30);
         const current = registry.getThread(threadId);
         if (title && current && current.title === baseTitle) {
           registry.upsertThread({ ...current, title });
